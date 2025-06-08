@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クッキークリッカー風ゲーム</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: white;
+            user-select: none; /* テキスト選択を無効化 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .main-game {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .shop {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .cookie {
+            width: 200px;
+            height: 200px;
+            background: #D2691E;
+            border-radius: 50%;
+            margin: 20px auto;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            user-select: none; /* テキスト選択を無効化 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-touch-callout: none; /* iOS Safari用 */
+            -webkit-tap-highlight-color: transparent; /* タップ時のハイライトを無効化 */
+        }
+
+        .cookie:hover {
+            transform: scale(1.05);
+        }
+
+        .cookie:active {
+            transform: scale(0.95);
+        }
+
+        .cookie::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 30%;
+            width: 15px;
+            height: 15px;
+            background: #8B4513;
+            border-radius: 50%;
+            box-shadow: 
+                30px 10px 0 #8B4513,
+                -10px 30px 0 #8B4513,
+                20px 40px 0 #8B4513,
+                50px 35px 0 #8B4513;
+        }
+
+        .counter {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.9em;
+        }
+
+        .upgrade {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 15px;
+            margin: 5px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .upgrade:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .upgrade:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .shop h3 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .click-effect {
+            position: absolute;
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 20px;
+            pointer-events: none;
+            animation: float-up 1s ease-out forwards;
+        }
+
+        @keyframes float-up {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+        }
+
+        .title {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">🍪 クッキークリッカー風ゲーム</h1>
+    
+    <div class="game-container">
+        <div class="main-game">
+            <div class="counter" id="counter">0 クッキー</div>
+            
+            <div class="cookie" id="cookie" draggable="false">🍪</div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <strong>1秒あたり:</strong><br>
+                    <span id="cps">0</span> クッキー
+                </div>
+                <div class="stat">
+                    <strong>総クリック数:</strong><br>
+                    <span id="totalClicks">0</span>
+                </div>
+                <div class="stat">
+                    <strong>クリック威力:</strong><br>
+                    <span id="clickPower">1</span>
+                </div>
+                <div class="stat">
+                    <strong>自動施設:</strong><br>
+                    <span id="totalBuildings">0</span>
+                </div>
+                <div class="stat">
+                    <strong>総生産数:</strong><br>
+                    <span id="totalProduced">0</span>
+                </div>
+                <div class="stat">
+                    <strong>手動生産:</strong><br>
+                    <span id="manualProduced">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="shop">
+            <h3>🛒 アップグレードショップ</h3>
+            
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.8em;">
+                💾 自動保存機能付き<br>
+                10秒ごと + 購入時に自動保存<br>
+                オフライン報酬もあります！
+            </div>
+            
+            <button class="upgrade" id="clickUpgrade">
+                <strong>クリック強化</strong><br>
+                クリック威力 +1<br>
+                コスト: <span id="clickUpgradeCost">10</span> クッキー
+            </button>
+            
+            <button class="upgrade" id="grandma">
+                <strong>おばあちゃん</strong><br>
+                1秒に1クッキー生産<br>
+                所有数: <span id="grandmaCount">0</span><br>
+                コスト: <span id="grandmaCost">100</span> クッキー
+            </button>
+            
+            <button class="upgrade" id="farm">
+                <strong>クッキー農場</strong><br>
+                1秒に5クッキー生産<br>
+                所有数: <span id="farmCount">0</span><br>
+                コスト: <span id="farmCost">500</span> クッキー
+            </button>
+            
+            <button class="upgrade" id="factory">
+                <strong>クッキー工場</strong><br>
+                1秒に20クッキー生産<br>
+                所有数: <span id="factoryCount">0</span><br>
+                コスト: <span id="factoryCost">2000</span> クッキー
+            </button>
+            
+            <button class="upgrade" id="bank">
+                <strong>クッキー銀行</strong><br>
+                1秒に100クッキー生産<br>
+                所有数: <span id="bankCount">0</span><br>
+                コスト: <span id="bankCost">10000</span> クッキー
+            </button>
+            
+            <button class="upgrade" id="resetGame" style="background: rgba(255, 100, 100, 0.3); margin-top: 20px;">
+                <strong>🔄 ゲームリセット</strong><br>
+                全ての進捗を削除して最初からやり直す
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let cookies = 0;
+        let clickPower = 1;
+        let totalClicks = 0;
+        let cps = 0;
+        let totalProduced = 0;  // 総生産数（手動+自動）
+        let manualProduced = 0; // 手動生産数（クリック分のみ）
+
+        // アップグレード情報
+        const upgrades = {
+            clickUpgrade: { cost: 10, costMultiplier: 1.5 },
+            grandma: { cost: 100, count: 0, cps: 1, costMultiplier: 1.15 },
+            farm: { cost: 500, count: 0, cps: 5, costMultiplier: 1.15 },
+            factory: { cost: 2000, count: 0, cps: 20, costMultiplier: 1.15 },
+            bank: { cost: 10000, count: 0, cps: 100, costMultiplier: 1.15 }
+        };
+
+        // DOM要素
+        const counterEl = document.getElementById('counter');
+        const cookieEl = document.getElementById('cookie');
+        const cpsEl = document.getElementById('cps');
+        const totalClicksEl = document.getElementById('totalClicks');
+        const clickPowerEl = document.getElementById('clickPower');
+        const totalBuildingsEl = document.getElementById('totalBuildings');
+        const totalProducedEl = document.getElementById('totalProduced');
+        const manualProducedEl = document.getElementById('manualProduced');
+
+        // クッキークリック
+        cookieEl.addEventListener('click', (e) => {
+            cookies += clickPower;
+            totalClicks++;
+            manualProduced += clickPower;
+            totalProduced += clickPower;
+            
+            // クリックエフェクト
+            showClickEffect(e.clientX, e.clientY, `+${clickPower}`);
+            
+            updateDisplay();
+        });
+
+        // ダブルクリックとコンテキストメニューを無効化
+        cookieEl.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+        });
+
+        cookieEl.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // ドラッグ開始を無効化
+        cookieEl.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
+
+        // クリックエフェクト表示
+        function showClickEffect(x, y, text) {
+            const effect = document.createElement('div');
+            effect.className = 'click-effect';
+            effect.textContent = text;
+            effect.style.left = x + 'px';
+            effect.style.top = y + 'px';
+            document.body.appendChild(effect);
+            
+            setTimeout(() => {
+                document.body.removeChild(effect);
+            }, 1000);
+        }
+
+        // アップグレード購入
+        function buyUpgrade(upgradeType) {
+            const upgrade = upgrades[upgradeType];
+            
+            if (cookies >= upgrade.cost) {
+                cookies -= upgrade.cost;
+                
+                if (upgradeType === 'clickUpgrade') {
+                    clickPower++;
+                    upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+                } else {
+                    upgrade.count++;
+                    upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+                }
+                
+                updateDisplay();
+                updateCPS();
+                saveGameState(); // 購入時に保存
+            }
+        }
+
+        // CPS（1秒あたりクッキー）更新
+        function updateCPS() {
+            cps = 0;
+            cps += upgrades.grandma.count * upgrades.grandma.cps;
+            cps += upgrades.farm.count * upgrades.farm.cps;
+            cps += upgrades.factory.count * upgrades.factory.cps;
+            cps += upgrades.bank.count * upgrades.bank.cps;
+        }
+
+        // 表示更新
+        function updateDisplay() {
+            counterEl.textContent = `${cookies.toLocaleString()} クッキー`;
+            cpsEl.textContent = cps.toLocaleString();
+            totalClicksEl.textContent = totalClicks.toLocaleString();
+            clickPowerEl.textContent = clickPower.toLocaleString();
+            totalProducedEl.textContent = totalProduced.toLocaleString();
+            manualProducedEl.textContent = manualProduced.toLocaleString();
+            
+            const totalBuildings = upgrades.grandma.count + upgrades.farm.count + 
+                                 upgrades.factory.count + upgrades.bank.count;
+            totalBuildingsEl.textContent = totalBuildings.toLocaleString();
+
+            // アップグレードボタンの更新
+            document.getElementById('clickUpgradeCost').textContent = upgrades.clickUpgrade.cost.toLocaleString();
+            document.getElementById('clickUpgrade').disabled = cookies < upgrades.clickUpgrade.cost;
+
+            // 建物アップグレードの更新
+            ['grandma', 'farm', 'factory', 'bank'].forEach(building => {
+                const upgrade = upgrades[building];
+                document.getElementById(`${building}Cost`).textContent = upgrade.cost.toLocaleString();
+                document.getElementById(`${building}Count`).textContent = upgrade.count.toLocaleString();
+                document.getElementById(building).disabled = cookies < upgrade.cost;
+            });
+        }
+
+        // ゲームリセット
+        function resetGame() {
+            if (confirm('本当にゲームをリセットしますか？\n全ての進捗が失われます。')) {
+                // 基本変数リセット
+                cookies = 0;
+                clickPower = 1;
+                totalClicks = 0;
+                cps = 0;
+                totalProduced = 0;
+                manualProduced = 0;
+                
+                // アップグレード情報リセット
+                upgrades.clickUpgrade.cost = 10;
+                upgrades.grandma.cost = 100;
+                upgrades.grandma.count = 0;
+                upgrades.farm.cost = 500;
+                upgrades.farm.count = 0;
+                upgrades.factory.cost = 2000;
+                upgrades.factory.count = 0;
+                upgrades.bank.cost = 10000;
+                upgrades.bank.count = 0;
+                
+                updateDisplay();
+                updateCPS();
+                saveGameState(); // リセット後に空の状態を保存
+            }
+        }
+
+        // ゲーム状態の保存
+        function saveGameState() {
+            try {
+                const gameData = {
+                    cookies: cookies,
+                    clickPower: clickPower,
+                    totalClicks: totalClicks,
+                    cps: cps,
+                    totalProduced: totalProduced,
+                    manualProduced: manualProduced,
+                    upgrades: upgrades,
+                    saveTime: Date.now()
+                };
+                localStorage.setItem('cookieClickerSave', JSON.stringify(gameData));
+                console.log('ゲームを保存しました');
+            } catch (error) {
+                console.error('保存に失敗しました:', error);
+            }
+        }
+
+        // ゲーム状態の読み込み
+        function loadGameState() {
+            try {
+                const savedData = localStorage.getItem('cookieClickerSave');
+                if (savedData) {
+                    const gameData = JSON.parse(savedData);
+                    
+                    // データの復元
+                    cookies = gameData.cookies || 0;
+                    clickPower = gameData.clickPower || 1;
+                    totalClicks = gameData.totalClicks || 0;
+                    cps = gameData.cps || 0;
+                    totalProduced = gameData.totalProduced || 0;
+                    manualProduced = gameData.manualProduced || 0;
+                    
+                    // アップグレード情報の復元
+                    if (gameData.upgrades) {
+                        Object.keys(upgrades).forEach(key => {
+                            if (gameData.upgrades[key]) {
+                                upgrades[key] = { ...upgrades[key], ...gameData.upgrades[key] };
+                            }
+                        });
+                    }
+                    
+                    updateDisplay();
+                    updateCPS();
+                    
+                    const saveTime = new Date(gameData.saveTime);
+                    console.log('ゲームを読み込みました (保存日時:', saveTime.toLocaleString(), ')');
+                    
+                    // オフライン時間の計算と報酬
+                    const offlineTime = Math.floor((Date.now() - gameData.saveTime) / 1000);
+                    if (offlineTime > 60 && cps > 0) { // 1分以上オフラインで、CPSがある場合
+                        const offlineEarnings = Math.floor(offlineTime * cps);
+                        cookies += offlineEarnings;
+                        totalProduced += offlineEarnings;
+                        
+                        const hours = Math.floor(offlineTime / 3600);
+                        const minutes = Math.floor((offlineTime % 3600) / 60);
+                        
+                        alert(`お疲れ様です！\n${hours}時間${minutes}分の間に ${offlineEarnings.toLocaleString()} クッキーが生産されました！`);
+                        updateDisplay();
+                    }
+                }
+            } catch (error) {
+                console.error('読み込みに失敗しました:', error);
+            }
+        }
+        document.getElementById('clickUpgrade').addEventListener('click', () => buyUpgrade('clickUpgrade'));
+        document.getElementById('grandma').addEventListener('click', () => buyUpgrade('grandma'));
+        document.getElementById('farm').addEventListener('click', () => buyUpgrade('farm'));
+        document.getElementById('factory').addEventListener('click', () => buyUpgrade('factory'));
+        document.getElementById('bank').addEventListener('click', () => buyUpgrade('bank'));
+
+        // 自動生産（1秒ごと）
+        setInterval(() => {
+            if (cps > 0) {
+                cookies += cps;
+                totalProduced += cps;
+                updateDisplay();
+            }
+        }, 1000);
+
+        // 自動保存（10秒ごと）
+        setInterval(() => {
+            saveGameState();
+        }, 10000);
+
+        // ゲーム初期化
+        function initGame() {
+            loadGameState(); // 保存データの読み込み
+            updateDisplay(); // 表示の初期化
+        }
+
+        // ページ読み込み時にゲーム初期化
+        window.addEventListener('load', initGame);
+
+        // ページを閉じる時に保存
+        window.addEventListener('beforeunload', saveGameState);
+    </script>
+</body>
+</html>
